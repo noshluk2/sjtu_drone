@@ -4,6 +4,7 @@ import os
 import sys
 import rclpy
 from gazebo_msgs.srv import SpawnEntity
+from geometry_msgs.msg import Pose
 
 def main(args=None):
     rclpy.init(args=args)
@@ -18,6 +19,11 @@ def main(args=None):
     req.xml = content
     req.robot_namespace = namespace
     req.reference_frame = "world"
+
+    req.initial_pose = Pose()
+    req.initial_pose.position.x = 0.0  # adjust as needed
+    req.initial_pose.position.y = 0.0  # adjust as needed
+    req.initial_pose.position.z = 1.0  # adjust as needed
 
     while not cli.wait_for_service(timeout_sec=1.0):
         node.get_logger().info('service not available, waiting again...')
