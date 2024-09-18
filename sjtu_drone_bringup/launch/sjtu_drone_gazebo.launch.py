@@ -30,13 +30,6 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time", default="true")
     use_gui = DeclareLaunchArgument("use_gui", default_value="true", choices=["true", "false"],
                                     description="Whether to execute gzclient")
-
-    # Declare the world file argument, defaulting to None
-    world_file_arg = DeclareLaunchArgument(
-        "world", default_value="None", description="Full path to the world file"
-    )
-    world_file = LaunchConfiguration("world")
-
     xacro_file_name = "sjtu_drone.urdf.xacro"
     pkg_gazebo_ros = get_package_share_directory('gazebo_ros')
     xacro_file = os.path.join(
@@ -46,17 +39,22 @@ def generate_launch_description():
     yaml_file_path = os.path.join(
         get_package_share_directory('sjtu_drone_bringup'),
         'config', 'drone.yaml'
-    )
-
+    )   
+    
     robot_description_config = xacro.process_file(xacro_file, mappings={"params_path": yaml_file_path})
     robot_desc = robot_description_config.toxml()
-
-    # Get namespace from yaml
+    # get ns from yaml
     model_ns = "drone"
     with open(yaml_file_path, 'r') as f:
         yaml_dict = yaml.load(f, Loader=yaml.FullLoader)
         model_ns = yaml_dict["namespace"] #+ "/"
     print("namespace: ", model_ns)
+
+
+    world_file = os.path.join(
+        get_package_share_directory("sjtu_drone_description"),
+        "worlds", "playground.world"
+    )
 
     def launch_gzclient(context, *args, **kwargs):
         if context.launch_configurations.get('use_gui') == 'true':
@@ -70,8 +68,6 @@ def generate_launch_description():
 
     return LaunchDescription([
         use_gui,
-        world_file_arg,  # Include the world file argument
-
         Node(
             package="robot_state_publisher",
             executable="robot_state_publisher",
@@ -90,16 +86,13 @@ def generate_launch_description():
             output='screen',
         ),
 
-        # Handle world file argument: launch gzserver with or without a world file
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(pkg_gazebo_ros, 'launch', 'gzserver.launch.py')
             ),
-            launch_arguments={
-                'world': world_file if world_file != 'None' else '',
-                'verbose': "true",
-                'extra_gazebo_args': 'verbose'
-            }.items()
+            launch_arguments={'world': world_file,
+                              'verbose': "true",
+                              'extra_gazebo_args': 'verbose'}.items()
         ),
 
         OpaqueFunction(function=launch_gzclient),

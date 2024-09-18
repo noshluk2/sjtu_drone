@@ -16,7 +16,7 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <inertia ixx="0.1152" ixy="0" ixz="0" iyy="0.1152" iyz="0" izz="0.218"/>
     </inertial>
-    <collision name="sjtu_drone_collision">/home/luqman/robotisim_ws/src/sjtu_drone/sjtu_drone_description/models/sjtu_drone
+    <collision name="sjtu_drone_collision">
       <origin rpy="0 0 0" xyz="0   0   0.04"/>
       <geometry>
         <mesh filename="/home/luqman/robotisim_ws/src/sjtu_drone/sjtu_drone_description/models/sjtu_drone/quadrotor_4.stl"/>
@@ -37,12 +37,15 @@
     <origin rpy="0 1.570796326795 0" xyz="0 0 0"/>
   </joint>
   <link name="sonar_link"/>
+
+
   <joint name="front_cam_joint" type="fixed">
     <origin rpy="0 0 0" xyz="0.2 0 0"/>
     <parent link="base_link"/>
     <child link="front_cam_link"/>
   </joint>
   <link name="front_cam_link"/>
+
   <joint name="bottom_cam_joint" type="fixed">
     <origin rpy="0 1.570796326795 0" xyz="0 0 0"/>
     <parent link="base_link"/>
@@ -52,7 +55,6 @@
   <gazebo>
     <plugin filename="libplugin_drone.so" name="simple_drone">
       <ros>
-        <namespace>/simple_drone</namespace>
         <remapping>cmd_vel:=cmd_vel</remapping>
         <remapping>imu:=imu</remapping>
         <remapping>sonar:=sonar</remapping>
@@ -112,11 +114,8 @@
         </noise>
       </imu>
       <plugin filename="libgazebo_ros_imu_sensor.so" name="imu">
-        <ros>
-          <namespace>/simple_drone</namespace>
-        </ros>
         <initial_orientation_as_reference>false</initial_orientation_as_reference>
-        <frame_name>/simple_drone/base_link</frame_name>
+        <frame_name>/base_link</frame_name>
       </plugin>
     </sensor>
   </gazebo>
@@ -153,58 +152,43 @@
         </noise>
       </ray>
       <plugin filename="libgazebo_ros_ray_sensor.so" name="sonar">
-        <ros>
-          <namespace>/simple_drone</namespace>
-          <!-- <remapping>~/out:=sonar</remapping> -->
-        </ros>
-        <frame_name>/simple_drone/sonar_link</frame_name>
+        <frame_name>/sonar_link</frame_name>
         <output_type>sensor_msgs/Range</output_type>
         <radiation_type>ultrasound</radiation_type>
       </plugin>
     </sensor>
   </gazebo>
 
-
 <gazebo reference="front_cam_link">
   <sensor type="depth" name="front_camera">
+    <pose>0 0 0 0 1.57 0</pose>
     <update_rate>30.0</update_rate>
-    <visualize>true</visualize> <!-- Enable visualization in Gazebo -->
-    
-    <!-- Camera Specifications -->
-    <camera name="head">
-      <horizontal_fov>1.3962634</horizontal_fov> <!-- Horizontal field of view -->
+    <camera>
+      <horizontal_fov>1.57</horizontal_fov>
       <image>
-        <width>800</width>
-        <height>800</height>
-        <format>R8G8B8</format> <!-- RGB format for visualization -->
+        <width>640</width>
+        <height>480</height>
+        <format>R8G8B8</format>
       </image>
-      
-      <!-- Depth camera clipping range -->
       <clip>
-        <near>0.02</near>  <!-- Near clipping plane -->
-        <far>300</far>  <!-- Far clipping plane -->
+        <near>0.1</near>
+        <far>5.0</far>
       </clip>
-      
-      <!-- Optional noise model for added realism -->
-      <noise>
-        <type>gaussian</type>
-        <mean>0.0</mean>
-        <stddev>0.007</stddev> <!-- Standard deviation of noise -->
-      </noise>
     </camera>
-    
-    <!-- Plugin for ROS2 to handle depth camera -->
     <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+          <pose>0 0 0 1.57 0 0</pose>
+
       <alwaysOn>true</alwaysOn>
       <updateRate>30.0</updateRate>
-      <cameraName>depth_camera</cameraName>
-      <imageTopicName>depth/image_raw</imageTopicName> <!-- Topic for depth image -->
-      <cameraInfoTopicName>depth/camera_info</cameraInfoTopicName> <!-- Camera info topic -->
-      <frameName>camera_link</frameName> <!-- Reference the camera link in URDF -->
-      <hackBaseline>0.07</hackBaseline> <!-- Baseline parameter for stereo vision (if applicable) -->
+      <cameraName>front_camera</cameraName>
+      <imageTopicName>depth/image_raw</imageTopicName>  <!-- For depth stream -->
+      <cameraInfoTopicName>depth/camera_info</cameraInfoTopicName>  <!-- For camera info -->
+      <frameName>front_cam_link</frameName>
+      <pointCloudTopicName>depth/points</pointCloudTopicName> <!-- If available, for point cloud data -->
     </plugin>
   </sensor>
 </gazebo>
+
 
   <!-- downward looking camera -->
   <gazebo reference="bottom_cam_link">
@@ -230,12 +214,7 @@
         </noise>
       </camera>
       <plugin filename="libgazebo_ros_camera.so" name="camera_bottom">
-        <ros>
-          <namespace>/simple_drone</namespace>
-          <!-- <remapping>image_raw:=camera_bottom</remapping>
-          <remapping>camera_info:=camera_bottom_info</remapping> -->
-        </ros>
-        <frame_name>/simple_drone/bottom_cam_link</frame_name>
+        <frame_name>bottom_cam_link</frame_name>
         <camera_name>bottom</camera_name>
         <hack_baseline>0.07</hack_baseline>
       </plugin>
@@ -263,10 +242,9 @@
       </gps>
       <plugin filename="libgazebo_ros_gps_sensor.so" name="gps">
         <ros>
-          <namespace>/simple_drone</namespace>
           <remapping>~/out:=~/nav</remapping>
         </ros>
-        <frame_name>/simple_drone/base_link</frame_name>
+        <frame_name>/base_link</frame_name>
       </plugin>
     </sensor>
   </gazebo>

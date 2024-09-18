@@ -32,7 +32,7 @@ def generate_launch_description():
         executable='spawn_entity.py',
         name='robot_spawner',
         output='screen',
-        arguments=["-topic", "/robot_description", "-entity", "diff_drive_bot"])
+        arguments=["-topic", "/robot_description", "-entity", "drone"])
 
 
 
