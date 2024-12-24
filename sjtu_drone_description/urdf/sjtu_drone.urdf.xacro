@@ -2,13 +2,13 @@
 <robot name="sjtu_drone" xmlns:xacro="http://www.ros.org/wiki/xacro">
 <!-- https://answers.ros.org/question/379014/passing-outside-parameters-into-urdf-file-using-xacro/ -->
   <!-- Need argument to get from launch file -->
-  <xacro:arg name="params_path" default="$(find sjtu_drone_bringup)/config/drone.yaml"/> 
+  <xacro:arg name="params_path" default="$(find sjtu_drone_bringup)/config/drone.yaml"/>
 
   <!-- Need seperate property for xacro inorder processing -->
-  <xacro:property name="params_path" value="$(arg params_path)"/> 
+  <xacro:property name="params_path" value="$(arg params_path)"/>
 
   <!-- Read in the yaml dict as mp (short for model parameters) -->
-  <xacro:property name="mp" value="${xacro.load_yaml(params_path)}"/> 
+  <xacro:property name="mp" value="${xacro.load_yaml(params_path)}"/>
 
   <xacro:property name="M_PI" value="3.14159265359" />
 
@@ -55,15 +55,16 @@
     <parent link="base_link" />
     <child link="front_cam_link" />
   </joint>
+
   <link name="front_cam_link"/>
 
-    <joint name="front_lidar_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.2 0 0"/>
-    <parent link="base_link" />
-    <child link="front_lidar_link" />
+  <joint name="front_cam_optical_joint" type="fixed">
+  <origin rpy="-1.5708 0 -1.5708" xyz="0 0 0"/>
+  <parent link="front_cam_link"/>
+  <child link="front_cam_optical_frame"/>
   </joint>
-  <link name="front_lidar_link"/>
 
+  <link name="front_cam_optical_frame"/>
 
   <joint name="bottom_cam_joint" type="fixed">
     <origin rpy="0 ${M_PI/2} 0" xyz="0 0 0"/>
@@ -195,43 +196,34 @@
   </gazebo>
 
   <gazebo reference="front_cam_link">
-  <sensor type="depth" name="front_camera">
-    <update_rate>30.0</update_rate>
-    <visualize>true</visualize>
+    <sensor name="front_camera" type="depth">
+      <always_on>true</always_on>
+      <visualize>true</visualize>
+      <update_rate>30</update_rate>
       <camera>
-        <horizontal_fov>2.09</horizontal_fov>
-        <image>
-          <width>640</width>
-          <height>360</height>
-          <format>R8G8B8</format>
-        </image>
-        <clip>
-          <near>0.1</near>
-          <far>100</far>
-        </clip>
+        <horizontal_fov>1.02974</horizontal_fov>
+          <image>
+            <width>1920</width>
+            <height>1080</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.2</near>
+            <far>300</far>
+          </clip>
         <noise>
           <type>gaussian</type>
           <mean>0.0</mean>
           <stddev>0.01</stddev>
         </noise>
       </camera>
-      <plugin name="depth_camera_controller" filename="libgazebo_ros_camera.so">
+      <plugin name="camera_front" filename="libgazebo_ros_camera.so">
         <ros>
           <namespace>${mp['namespace']}</namespace>
         </ros>
-        <frame_name>${mp['namespace']}/front_cam_link</frame_name>
-        <alwaysOn>true</alwaysOn>
-        <updateRate>30.0</updateRate>  <!-- Camera update rate in Hz -->
-        <cameraName>front_depth_camera</cameraName>
-        <imageTopicName>depth/image_raw</imageTopicName>
-        <cameraInfoTopicName>depth/camera_info</cameraInfoTopicName>
-        <hackBaseline>0.07</hackBaseline>  <!-- Adjust baseline for stereo depth cameras -->
-        <horizontal_fov>1.047</horizontal_fov>  <!-- Field of view in radians -->
-        <imageWidth>640</imageWidth>  <!-- Width of the camera image -->
-        <imageHeight>480</imageHeight>  <!-- Height of the camera image -->
-        <nearClip>0.1</nearClip>  <!-- Near clipping distance -->
-        <farClip>100.0</farClip>  <!-- Far clipping distance -->
-
+        <frame_name>${mp['namespace']}/front_cam_optical_frame</frame_name>
+        <camera_name>front</camera_name>
+        <hack_baseline>0.07</hack_baseline>
       </plugin>
     </sensor>
   </gazebo>
@@ -274,8 +266,6 @@
   </gazebo>
 
 
-<!-- Velodyne ending -->
-
   <gazebo reference="base_link">
     <sensor name="gps" type="gps">
       <always_on>1</always_on>
@@ -317,7 +307,6 @@
       <plugin name="collision_plugin" filename="libgazebo_ros_bumper.so">
         <ros>
           <namespace>${mp['namespace']}</namespace>
-          <!-- <remapping>bumper_states:=bumper_states</remapping> -->
         </ros>
         <frame_name>${mp['namespace']}/base_link</frame_name>
       </plugin>
